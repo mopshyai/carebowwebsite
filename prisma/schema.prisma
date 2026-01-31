@@ -1,0 +1,331 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String            @id @default(cuid())
+  name             String?
+  email            String            @unique
+  emailVerified    DateTime?
+  image            String?
+  password         String?
+  phone            String?
+  type             UserType          @default(FAMILY)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  accounts         Account[]
+  caregiverProfile CaregiverProfile?
+  familyProfile    FamilyProfile?
+  sessions         Session[]
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+model FamilyProfile {
+  id                       String             @id @default(cuid())
+  userId                   String             @unique
+  address                  String
+  city                     String
+  state                    String
+  zipCode                  String
+  emergencyContactName     String?
+  emergencyContactPhone    String?
+  emergencyContactRelation String?
+  createdAt                DateTime           @default(now())
+  updatedAt                DateTime           @updatedAt
+  bookings                 Booking[]
+  user                     User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  healthRecords            HealthRecord[]
+  transportRequests        TransportRequest[]
+  transportBookings        TransportBooking[]
+  familyMembers            FamilyMember[]
+}
+
+model FamilyMember {
+  id             String        @id @default(cuid())
+  familyId       String
+  name           String
+  relationship   String
+  dateOfBirth    DateTime?
+  medicalNotes   String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  family         FamilyProfile @relation(fields: [familyId], references: [id], onDelete: Cascade)
+}
+
+model CaregiverProfile {
+  id                 String              @id @default(cuid())
+  userId             String              @unique
+  caregiverType      CaregiverType       @default(ELDER_CARE_SPECIALIST)
+  bio                String?
+  experience         Int                 @default(0)
+  hourlyRate         Decimal             @default(0) @db.Decimal(10, 2)
+  address            String?
+  city               String?
+  state              String?
+  zipCode            String?
+  serviceRadius      Int?
+  specializations    String[]
+  languages          String[]
+  rating             Decimal             @default(0) @db.Decimal(3, 2)
+  totalReviews       Int                 @default(0)
+  isActive           Boolean             @default(true)
+  verificationStatus VerificationStatus  @default(PENDING)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  bookings           Booking[]
+  careLogs           CareLog[]
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviews            Review[]
+  certifications     Certification[]
+  documents          CaregiverDocument[]
+  availability       Availability[]
+}
+
+model Certification {
+  id          String           @id @default(cuid())
+  caregiverId String
+  name        String
+  issuer      String?
+  issueDate   DateTime?
+  expiryDate  DateTime?
+  fileUrl     String?
+  verified    Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  caregiver   CaregiverProfile @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+}
+
+model CaregiverDocument {
+  id          String           @id @default(cuid())
+  caregiverId String
+  type        DocumentType
+  title       String
+  fileUrl     String
+  verified    Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  caregiver   CaregiverProfile @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+}
+
+model Availability {
+  id          String           @id @default(cuid())
+  caregiverId String
+  dayOfWeek   Int
+  startTime   String
+  endTime     String
+  isAvailable Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  caregiver   CaregiverProfile @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+}
+
+model Booking {
+  id             String           @id @default(cuid())
+  familyId       String
+  caregiverId    String
+  startDate      DateTime
+  endDate        DateTime?
+  serviceType    String?
+  bookingType    BookingType      @default(HOURLY)
+  serviceAddress String?
+  requirements   String?
+  hours          Int?
+  totalCost      Decimal?         @db.Decimal(10, 2)
+  totalAmount    Decimal?         @db.Decimal(10, 2)
+  status         BookingStatus    @default(PENDING)
+  notes          String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  caregiver      CaregiverProfile @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+  family         FamilyProfile    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  logs           CareLog[]
+  review         Review?
+}
+
+model CareLog {
+  id            String           @id @default(cuid())
+  bookingId     String
+  caregiverId   String
+  date          DateTime         @default(now())
+  timestamp     DateTime         @default(now())
+  vitals        String?
+  bloodPressure String?
+  heartRate     String?
+  temperature   String?
+  oxygenLevel   String?
+  medications   String?
+  activities    String?
+  notes         String?
+  attachments   String[]
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  booking       Booking          @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  caregiver     CaregiverProfile @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id          String           @id @default(cuid())
+  bookingId   String           @unique
+  caregiverId String
+  rating      Int
+  comment     String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  booking     Booking          @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  caregiver   CaregiverProfile @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+}
+
+model HealthRecord {
+  id          String           @id @default(cuid())
+  familyId    String
+  title       String
+  type        HealthRecordType?
+  recordType  String?
+  memberName  String?
+  description String?
+  fileUrl     String?
+  doctorName  String?
+  date        DateTime?
+  recordDate  DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  family      FamilyProfile    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+}
+
+model PasswordResetToken {
+  id        String   @id
+  email     String
+  token     String   @unique
+  expires   DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+model TransportRequest {
+  id        String          @id @default(cuid())
+  familyId  String
+  pickup    String
+  dropoff   String
+  date      DateTime
+  time      String
+  notes     String?
+  status    TransportStatus @default(PENDING)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  family    FamilyProfile   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+}
+
+model TransportBooking {
+  id                  String          @id @default(cuid())
+  familyId            String
+  userId              String?
+  transportType       String          @default("REGULAR")
+  pickupAddress       String
+  dropoffAddress      String
+  pickupTime          DateTime
+  specialRequirements String?
+  status              TransportStatus @default(PENDING)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  family              FamilyProfile   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+}
+
+enum UserType {
+  FAMILY
+  CAREGIVER
+  ADMIN
+}
+
+enum CaregiverType {
+  ELDER_CARE_SPECIALIST
+  NURSE
+  PHYSIOTHERAPIST
+  COMPANION
+  SPECIALIZED_CARE
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum BookingType {
+  HOURLY
+  DAILY
+  WEEKLY
+  MONTHLY
+  LIVE_IN
+}
+
+enum TransportStatus {
+  PENDING
+  REQUESTED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum HealthRecordType {
+  LAB_REPORT
+  IMAGING
+  PRESCRIPTION
+  MEDICAL_REPORT
+}
+
+enum DocumentType {
+  ID_PROOF
+  ADDRESS_PROOF
+  CERTIFICATION
+  BACKGROUND_CHECK
+  OTHER
+}

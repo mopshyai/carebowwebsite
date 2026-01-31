@@ -1,0 +1,27 @@
+export const askCareBowPlan = {
+  id: 'ask-carebow',
+  name: 'Ask CareBow',
+  tagline: 'AI-Powered Health Guidance',
+  priceUSD: 20,
+  billingPeriod: 'month',
+  description: 'Get instant AI-powered health guidance for your elderly loved ones, available 24/7.',
+  features: [
+    'Unlimited AI health consultations',
+    '24/7 symptom assessment and triage',
+    'Personalized health guidance based on medical history',
+    'Traditional remedy suggestions (Gharelu Nuskhe)',
+    'Ayurvedic treatment recommendations',
+    'Emergency detection and instant alerts',
+    'Health memory - stores important health information',
+    'Multi-family member support',
+    'Service recommendations based on symptoms',
+  ],
+  highlights: [
+    { icon: 'clock', text: 'Available 24/7' },
+    { icon: 'brain', text: 'AI-Powered' },
+    { icon: 'shield', text: 'Emergency Detection' },
+  ],
+  cta: 'Try Free for 7 Days',
+  trialDays: 7,
+  color: '#7C3AED',
+};
